@@ -20,7 +20,22 @@ jobs:
           pip install -r requirements.txt
           pip install py2cfg==1.0.5 coverage==7.10.7
 
+      - name: Extract expected files
+        run: |
+          # Extract the zip if it exists
+          if [ -f program_cfg_input_coverage.zip ]; then
+            unzip -q program_cfg_input_coverage.zip
+            # Move contents to expected locations if nested
+            if [ -d program_cfg_input_coverage ]; then
+              cp -r program_cfg_input_coverage/part1_program_cfg . 2>/dev/null || true
+              cp -r program_cfg_input_coverage/part2_program_input_coverage . 2>/dev/null || true
+            fi
+          fi
+          # Show what we have
+          ls -la
+          ls -la part1_program_cfg 2>/dev/null || echo "part1_program_cfg not found"
+          ls -la part2_program_input_coverage 2>/dev/null || echo "part2_program_input_coverage not found"
+
       - name: Run all tests and report comparison results
         run: |
           python validate_phase1.py
-
