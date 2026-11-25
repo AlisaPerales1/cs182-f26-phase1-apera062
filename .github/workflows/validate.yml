@@ -18,41 +18,9 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
+          pip install py2cfg==1.0.5 coverage==7.10.7
 
-      - name: Validate Part1
+      - name: Run all tests and report comparison results
         run: |
-          TOTAL=1
-          PASSED=0
-          FAILED=0
+          python validate_phase1.py
 
-          if python -m py_compile Part1.py; then
-            PASSED=$((PASSED+1))
-          else
-            FAILED=$((FAILED+1))
-            echo "[FAIL] Part1.py: syntax error"
-          fi
-
-          echo "=============================="
-          echo "TOTAL: $TOTAL"
-          echo "PASSED: $PASSED"
-          echo "FAILED: $FAILED"
-          echo "=============================="
-
-      - name: Validate Part2
-        run: |
-          TOTAL=1
-          PASSED=0
-          FAILED=0
-
-          if python -m py_compile Part2.py; then
-            PASSED=$((PASSED+1))
-          else
-            FAILED=$((FAILED+1))
-            echo "[FAIL] Part2.py: syntax error"
-          fi
-
-          echo "=============================="
-          echo "TOTAL: $TOTAL"
-          echo "PASSED: $PASSED"
-          echo "FAILED: $FAILED"
-          echo "=============================="
