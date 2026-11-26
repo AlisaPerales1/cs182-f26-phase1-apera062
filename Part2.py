@@ -5,43 +5,43 @@ from pathlib import Path
 
 
 def run_target(program_path, input_path):
-
     text = ""
-
-    if input_path:
+    if input_path and Path(input_path).exists():
         text = Path(input_path).read_text().strip()
 
     old_argv = sys.argv[:]
-
     try:
-
-        sys.argv = [program_path]
-
+        sys.argv = [str(program_path)]
         if text:
-            sys.argv.append(text)
+            # Handle different input types
+            parts = text.split()
+            if len(parts) > 1:
+                # Space-separated array
+                sys.argv.extend(parts)
+            else:
+                sys.argv.append(text)
 
-        cov = coverage.Coverage()
-
+        cov = coverage.Coverage(branch=False, source=[str(Path(program_path).parent)])
         cov.start()
-
-        runpy.run_path(
-            program_path,
-            run_name="__main__"
-        )
-
+        try:
+            runpy.run_path(str(program_path), run_name="__main__")
+        except SystemExit:
+            pass
+        except Exception:
+            pass
         cov.stop()
-        cov.save()
-
         return cov
-
     finally:
         sys.argv = old_argv
 
 
 def print_coverage(program_path, cov):
-
-    filename, executable, _, missing, _ = \
-        cov.analysis2(program_path)
+    try:
+        filename, executable, _, missing, _ = cov.analysis2(str(program_path))
+    except Exception:
+        # Fallback if analysis fails
+        executable = set()
+        missing = set()
 
     missing = set(missing)
     executable = set(executable)
@@ -50,39 +50,21 @@ def print_coverage(program_path, cov):
         lines = f.readlines()
 
     for num, line in enumerate(lines, start=1):
-
-        line = line.rstrip()
-
+        line = line.rstrip("\n")
         if num in executable:
-
-            if num in missing:
-                prefix = "# "
-            else:
-                prefix = "  "
-
+            prefix = "# " if num in missing else "  "
         else:
             prefix = "# "
-
-        print(
-            f"{prefix}{num:>4}: {line}"
-        )
+        print(f"{prefix}{num:>4}: {line}")
 
 
 if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Usage: python Part2.py <program.py> [input.txt]")
+        sys.exit(1)
 
     program = sys.argv[1]
+    input_file = sys.argv[2] if len(sys.argv) > 2 else None
 
-    input_file = None
-
-    if len(sys.argv) > 2:
-        input_file = sys.argv[2]
-
-    cov = run_target(
-        program,
-        input_file
-    )
-
-    print_coverage(
-        program,
-        cov
-    )
+    cov = run_target(program, input_file)
+    print_coverage(program, cov)
