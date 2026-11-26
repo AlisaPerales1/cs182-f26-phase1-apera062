@@ -13,9 +13,9 @@ def unparse(node):
 
 
 def collect_blocks(block, visited, blocks):
-    if block is None or block.id in visited:
+    if block is None or id(block) in visited:
         return
-    visited.add(block.id)
+    visited.add(id(block))
     if block.statements:
         blocks.append(block)
     for exit_edge in block.exits:
@@ -28,32 +28,34 @@ def main(filename):
     blocks = []
     collect_blocks(cfg.entryblock, set(), blocks)
 
-    # Sort by starting line for more stable output
+    # Sort by starting line number for stable output
     def start_line(b):
-        return min(getattr(s, "lineno", 0) for s in b.statements) if b.statements else 0
+        lines = [getattr(s, "lineno", 9999) for s in b.statements]
+        return min(lines) if lines else 9999
 
     blocks.sort(key=start_line)
+
+    # Remap node IDs to sequential numbers based on sorted order
+    id_map = {b.id: idx + 1 for idx, b in enumerate(blocks)}
 
     print(f"# of nodes = {len(blocks)}")
 
     for block in blocks:
-        if not block.statements:
-            continue
         first = min(getattr(s, "lineno", 0) for s in block.statements)
         last = max(getattr(s, "end_lineno", getattr(s, "lineno", 0)) for s in block.statements)
         print()
-        print(f"NODE {block.id}: line {first} - {last}")
+        print(f"NODE {id_map[block.id]}: line {first} - {last}")
         for stmt in block.statements:
             print(unparse(stmt))
 
-    # Collect edges
+    # Collect and remap edges
     edges = []
     for block in blocks:
         for edge in block.exits:
-            if edge.target is None:
+            if edge.target is None or edge.target.id not in id_map:
                 continue
             cond = unparse(edge.exitcase)
-            edges.append((block.id, edge.target.id, cond))
+            edges.append((id_map[block.id], id_map[edge.target.id], cond))
 
     print()
     print(f"# of edges = {len(edges)}")
